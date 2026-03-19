@@ -158,9 +158,12 @@ export default function App() {
 
           {/* Loading spinner */}
           {loading && (
-            <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
               <div className="w-10 h-10 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin" />
-              <p className="text-sm text-slate-400">Generating data and running reconciliation…</p>
+              <p className="text-sm font-medium text-slate-600">Generating data and running reconciliation…</p>
+              <p className="text-xs text-slate-400 max-w-xs">
+                This may take a moment — the backend is hosted on a free tier and may need a few seconds to wake up.
+              </p>
             </div>
           )}
 
