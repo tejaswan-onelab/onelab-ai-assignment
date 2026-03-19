@@ -55,7 +55,7 @@
 
 ## Polish & Deploy
 
-- [ ] **17. Dockerize** — Dockerfile for backend + frontend, docker-compose.yml
-- [ ] **18. Deploy** — Deploy to cloud (Render/Railway + Vercel or single service)
+- [x] **17. Dockerize** — Dockerfile for backend + frontend, docker-compose.yml
+- [x] **18. Deploy** — Deploy to cloud (Render/Railway + Vercel or single service)
 - [ ] **19. Demo Video** — Record walkthrough
 - [ ] **20. Production Caveats** — Write 3-sentence summary of what would fail in prod
