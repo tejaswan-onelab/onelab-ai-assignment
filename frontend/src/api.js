@@ -1,4 +1,4 @@
-const BASE = "http://localhost:8000";
+const BASE = "https://onelab-ai-assignment.onrender.com";
 
 export async function generateData() {
   const res = await fetch(`${BASE}/api/generate`, { method: "POST" });

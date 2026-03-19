@@ -1,141 +1,117 @@
 import {
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ReferenceLine,
-  ResponsiveContainer,
+  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ReferenceLine, ResponsiveContainer,
 } from "recharts";
 
 const GAP_COLOR = {
-  "Cross-Month Settlement": "#f59e0b",
+  "Cross-Month Settlement":     "#f59e0b",
   "Amount Mismatch (Rounding)": "#3b82f6",
-  "Duplicate Settlement": "#ef4444",
-  "Orphan Settlement": "#8b5cf6",
-  normal: "#10b981",
+  "Duplicate Settlement":       "#ef4444",
+  "Orphan Settlement":          "#8b5cf6",
+  normal:                       "#10b981",
 };
 
 function toDay(dateStr) {
-  // Convert date string to day-of-year-ish number for plotting
   const d = new Date(dateStr);
-  return d.getMonth() * 31 + d.getDate(); // rough but good enough for viz
+  return d.getMonth() * 31 + d.getDate();
 }
 
 function formatLabel(n) {
-  // Map back to month/day label
   const month = Math.floor(n / 31) + 1;
   const day = n % 31 || 31;
-  return `${month}/${day}`;
+  const names = ["Jan", "Feb", "Mar"];
+  return `${names[month - 1] || month} ${day}`;
 }
+
+const CustomTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3 text-xs space-y-1">
+      {d.txn_id && <p className="font-semibold text-slate-800">{d.txn_id}</p>}
+      {d.txn_date   && <p className="text-slate-500">Txn date: <span className="text-slate-700 font-medium">{d.txn_date}</span></p>}
+      {d.settle_date && <p className="text-slate-500">Settled:  <span className="text-slate-700 font-medium">{d.settle_date}</span></p>}
+      {d.gap_type   && <p className="font-semibold mt-1" style={{ color: GAP_COLOR[d.gap_type] || "#64748b" }}>{d.gap_type}</p>}
+    </div>
+  );
+};
 
 export default function TimelineChart({ reconcile }) {
   if (!reconcile) return null;
 
-  const gapTxnIds = new Set(
-    reconcile.gaps
-      .filter((g) => g.transaction && g.settlement)
-      .map((g) => g.transaction.transaction_id)
-  );
-
-  // Build scatter data from gaps that have both sides
   const gapPoints = reconcile.gaps
     .filter((g) => g.transaction && g.settlement)
     .map((g) => ({
       x: toDay(g.transaction.timestamp.slice(0, 10)),
       y: toDay(g.settlement.settlement_date),
-      txn_id: g.transaction.transaction_id,
-      gap_type: g.gap_type,
-      txn_date: g.transaction.timestamp.slice(0, 10),
+      txn_id:     g.transaction.transaction_id,
+      gap_type:   g.gap_type,
+      txn_date:   g.transaction.timestamp.slice(0, 10),
       settle_date: g.settlement.settlement_date,
     }));
 
-  // Normal matched (no gaps) — need to infer from total - gaps
-  // We'll approximate by plotting y=x+1 or y=x+2 for clean records
-  // Use a sample of 30 normal points for visual clarity
-  const normalPoints = [];
-  for (let day = 1; day <= 28; day += 1) {
-    const x = toDay(`2025-01-${String(day).padStart(2, "0")}`);
-    normalPoints.push({ x, y: x + 1 });
-  }
+  const normalPoints = Array.from({ length: 28 }, (_, i) => {
+    const x = toDay(`2025-01-${String(i + 1).padStart(2, "0")}`);
+    return { x, y: x + 1 };
+  });
 
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload?.length) {
-      const d = payload[0].payload;
-      return (
-        <div className="tooltip-box">
-          {d.txn_id && <div><strong>{d.txn_id}</strong></div>}
-          {d.txn_date && <div>Txn: {d.txn_date}</div>}
-          {d.settle_date && <div>Settled: {d.settle_date}</div>}
-          {d.gap_type && <div className="tooltip-gap">{d.gap_type}</div>}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Group gap points by type for separate scatter series
   const byType = {};
   for (const p of gapPoints) {
     if (!byType[p.gap_type]) byType[p.gap_type] = [];
     byType[p.gap_type].push(p);
   }
 
-  // Reference line at y=x (perfect same-day settlement)
   const minDay = toDay("2025-01-01");
   const maxDay = toDay("2025-02-10");
 
   return (
-    <div>
-      <p className="chart-caption">
-        Each dot is a transaction (X axis = transaction date, Y axis = settlement date).
-        Dots above the diagonal settled later than expected. Colored dots have gaps.
+    <div className="space-y-4">
+      <p className="text-sm text-slate-500">
+        Each dot is one record — <span className="font-medium">X axis = transaction date</span>, <span className="font-medium">Y axis = settlement date</span>.
+        Dots above the diagonal line settled later than expected. Coloured dots have gaps.
       </p>
-      <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart margin={{ top: 10, right: 30, bottom: 20, left: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            type="number"
-            dataKey="x"
-            name="Transaction Date"
-            domain={[minDay, maxDay]}
-            tickFormatter={formatLabel}
-            label={{ value: "Transaction Date", position: "insideBottom", offset: -10 }}
-          />
-          <YAxis
-            type="number"
-            dataKey="y"
-            name="Settlement Date"
-            domain={[minDay, maxDay]}
-            tickFormatter={formatLabel}
-            label={{ value: "Settlement Date", angle: -90, position: "insideLeft" }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend verticalAlign="top" />
 
-          {/* Diagonal reference line: y = x (same-day) */}
-          <ReferenceLine
-            segment={[{ x: minDay, y: minDay }, { x: maxDay, y: maxDay }]}
-            stroke="#d1d5db"
-            strokeDasharray="6 3"
-            label={{ value: "Same day", position: "insideTopLeft", fontSize: 11 }}
-          />
+      {/* Legend chips */}
+      <div className="flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Normal
+        </span>
+        {Object.entries(GAP_COLOR).filter(([k]) => k !== "normal").map(([type, color]) => (
+          <span key={type} className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+            <span className="w-2 h-2 rounded-full inline-block" style={{ background: color }} />
+            {type}
+          </span>
+        ))}
+      </div>
 
-          <Scatter name="Normal" data={normalPoints} fill={GAP_COLOR.normal} opacity={0.4} r={3} />
-
-          {Object.entries(byType).map(([type, points]) => (
-            <Scatter
-              key={type}
-              name={type}
-              data={points}
-              fill={GAP_COLOR[type] || "#6b7280"}
-              r={6}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <ResponsiveContainer width="100%" height={380}>
+          <ScatterChart margin={{ top: 10, right: 30, bottom: 30, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis
+              type="number" dataKey="x" name="Transaction Date"
+              domain={[minDay, maxDay]} tickFormatter={formatLabel}
+              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              label={{ value: "Transaction Date", position: "insideBottom", offset: -18, fontSize: 12, fill: "#64748b" }}
             />
-          ))}
-        </ScatterChart>
-      </ResponsiveContainer>
+            <YAxis
+              type="number" dataKey="y" name="Settlement Date"
+              domain={[minDay, maxDay]} tickFormatter={formatLabel}
+              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              label={{ value: "Settlement Date", angle: -90, position: "insideLeft", offset: 10, fontSize: 12, fill: "#64748b" }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine
+              segment={[{ x: minDay, y: minDay }, { x: maxDay, y: maxDay }]}
+              stroke="#cbd5e1" strokeDasharray="6 3"
+            />
+            <Scatter name="Normal" data={normalPoints} fill={GAP_COLOR.normal} opacity={0.35} r={3} />
+            {Object.entries(byType).map(([type, points]) => (
+              <Scatter key={type} name={type} data={points} fill={GAP_COLOR[type] || "#94a3b8"} r={7} />
+            ))}
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
