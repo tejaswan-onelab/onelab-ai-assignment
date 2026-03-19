@@ -12,7 +12,11 @@ app = FastAPI(title="Payments Reconciliation API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://onelab-ai-assignment-1.onrender.com",
+        "http://localhost:5173",
+        "http://localhost:5174",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
