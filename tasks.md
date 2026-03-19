@@ -42,16 +42,16 @@
 
 ## Tests
 
-- [ ] **14. Test Data Generator** — `backend/tests/test_data_generator.py`
-  - [ ] 14a. Verify correct number of records generated
-  - [ ] 14b. Verify all 4 gap types are present in raw data
-- [ ] **15. Test Reconciler** — `backend/tests/test_reconciler.py`
-  - [ ] 15a. Verify all 4 gap types are detected
-  - [ ] 15b. Verify no false positives on clean data
-  - [ ] 15c. Verify summary math (gap counts + amounts)
-- [ ] **16. Test API** — `backend/tests/test_api.py`
-  - [ ] 16a. Endpoint response codes
-  - [ ] 16b. CSV export format validation
+- [x] **14. Test Data Generator** — `backend/tests/test_data_generator.py`
+  - [x] 14a. Verify correct number of records generated
+  - [x] 14b. Verify all 4 gap types are present in raw data
+- [x] **15. Test Reconciler** — `backend/tests/test_reconciler.py`
+  - [x] 15a. Verify all 4 gap types are detected
+  - [x] 15b. Verify no false positives on clean data
+  - [x] 15c. Verify summary math (gap counts + amounts)
+- [x] **16. Test API** — `backend/tests/test_api.py`
+  - [x] 16a. Endpoint response codes
+  - [x] 16b. CSV export format validation
 
 ## Polish & Deploy
 
